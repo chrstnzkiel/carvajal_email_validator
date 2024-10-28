@@ -126,7 +126,7 @@
                 return True
 
             # RFC 5322 compliance: Check if the local part starts or ends with a prohibited character
-            if local_part[0] in '._-' or local_part[-1] in '._-':
+            if local_part[0] in '._-+' or local_part[-1] in '._-+':
                 return True
 
             # RFC 5322 compliance: Check for consecutive special characters (e.g., "..", "__", "--")
@@ -145,7 +145,7 @@
 
             # Provider-specific restrictions for Gmail and Hotmail
             if domain_part in ['gmail.com', 'hotmail.com']:
-                if '_' in local_part or '-' in local_part:
+                if '_' in local_part or '-' in local_part or '+' in local_part:
                     return True  # Invalid if contains restricted characters for these providers
 
             # General rule: Check for valid TLDs and .ph domains
@@ -174,8 +174,8 @@
 
             # Provider-specific restriction message
             if domain_part in ['gmail.com', 'hotmail.com']:
-                if '_' in local_part or '-' in local_part:
-                    errors.append(f"Emails for {domain_part} cannot contain '_' or '-' characters.")
+                if '_' in local_part or '-' in local_part or '+' in local_part:
+                    errors.append(f"Emails for {domain_part} cannot contain '_', '-' or '+' characters.")
 
             if domain_part in ['gmail.com', 'yahoo.com', 'hotmail.com'] and local_part.isdigit():
                 errors.append("Emails cannot be all numbers; there must be at least one letter.")
