@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+    © 2024 Christian Ezekiel L. Carvajal. All rights reserved.
+    This code is licensed for educational use only.
+    Unauthorized distribution or reproduction of this code is strictly prohibited.
+    -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.jpg" type="image/jpeg">
+    <title>Email Validator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black; 
+            color: white; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #1a1a1a; 
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); 
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            color: gold; 
+            margin-bottom: 20px;
+        }
+
+        form {
+            margin-bottom: 20px;
+            color: white; 
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #333; 
+            color: white; 
+        }
+
+        input[type="text"]::placeholder {
+            color: #bbb; 
+        }
+
+        input[type="submit"] {
+            background-color: gold; 
+            color: black; 
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: black; 
+            color: gold; 
+        }
+
+        .result, .error {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        .error {
+            color: red; 
+        }
+
+        .result {
+            color: gold; 
+        }
+    </style>
+    <!-- PyScript library -->
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Email Validator</h1>
+        <form id="emailForm">
+            <label for="email">Enter Email Address:</label>
+            <input type="text" id="email" name="email" placeholder="e.g., example@domain.com" required>
+            <input type="submit" value="Validate">
+        </form>
+        <div id="result" class="result" style="display: none"></div>
+    </div>
+
+    <py-script>
+
+        # © 2024 Christian Ezekiel L. Carvajal. All rights reserved.
+        # Licensed for educational purposes only. Unauthorized distribution is prohibited.
+
+        import re
+
+        def validate_email(email):
+            # Updated regex to check for common TLDs and additional .ph TLDs
+            email_regex = (
+                r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.' 
+                r'(com|net|org|gov|edu|mil|info|biz|com\.ph|net\.ph|org\.ph|gov\.ph|edu\.ph|ngo\.ph|mil\.ph|i\.ph)$'
+            )
+            if re.match(email_regex, email) and not special_rules_violated(email):
+                return "The email you have entered is valid!"
+            else:
+                return suggest_correction(email)
+
+        def special_rules_violated(email):
+            local_part = email.split('@')[0]
+            domain_part = email.split('@')[-1].lower()
+
+            # Check if email contains multiple '@' symbols
+            if email.count('@') > 1:
+                return True
+
+            # RFC 5322 compliance: Check if the local part starts or ends with a prohibited character
+            if local_part[0] in '._-' or local_part[-1] in '._-':
+                return True
+
+            # RFC 5322 compliance: Check for consecutive special characters (e.g., "..", "__", "--")
+            if re.search(r'[._-]{2,}', local_part):
+                return True
+
+            # Check if the local part is only numbers (before the '@')
+            if local_part.isdigit():
+                # If domain is Gmail, Yahoo, or Hotmail, enforce at least one letter
+                if domain_part in ['gmail.com', 'yahoo.com', 'hotmail.com']:
+                    return True  # Return True if it is all numbers
+
+            # Check for maximum length (254 characters) and local part (64 characters)
+            if len(email) > 254 or len(local_part) > 64:
+                return True
+
+            # Provider-specific restrictions for Gmail and Hotmail
+            if domain_part in ['gmail.com', 'hotmail.com']:
+                if '_' in local_part or '-' in local_part:
+                    return True  # Invalid if contains restricted characters for these providers
+
+            # General rule: Check for valid TLDs and .ph domains
+            if domain_part.count('.') > 1:
+                domain_parts = domain_part.split('.')
+                if not (domain_parts[-2:] == ['com', 'ph'] or
+                        domain_parts[-2:] == ['net', 'ph'] or
+                        domain_parts[-2:] == ['org', 'ph'] or
+                        domain_parts[-2:] == ['gov', 'ph'] or
+                        domain_parts[-2:] == ['edu', 'ph'] or
+                        domain_parts[-2:] == ['ngo', 'ph'] or
+                        domain_parts[-2:] == ['mil', 'ph'] or
+                        domain_parts[-1] == 'i'):
+                    return True
+
+            return False
+
+        def suggest_correction(email):
+            errors = []
+            local_part = email.split('@')[0]
+            domain_part = email.split('@')[-1].lower()
+
+            # Check for multiple "@" symbols
+            if email.count('@') > 1:
+                errors.append("Email cannot contain multiple '@' symbols.")
+
+            # Provider-specific restriction message
+            if domain_part in ['gmail.com', 'hotmail.com']:
+                if '_' in local_part or '-' in local_part:
+                    errors.append(f"Emails for {domain_part} cannot contain '_' or '-' characters.")
+
+            if domain_part in ['gmail.com', 'yahoo.com', 'hotmail.com'] and local_part.isdigit():
+                errors.append("Emails cannot be all numbers; there must be at least one letter.")
+
+            # Check for other conditions as before
+            elif '@' not in email:
+                errors.append("Did you forget the '@' symbol?")
+            elif '.' not in email.split('@')[-1]:
+                errors.append("Missing or incorrect domain format.")
+            elif email.endswith('@'):
+                errors.append("Please provide a domain name and TLD (e.g., '.com', '.net').")
+            elif '@' in email:
+                domain_part = email.split('@')[-1]
+                if not re.search(r'\.(com|net|org|edu|gov|mil|info|biz|com\.ph|net\.ph|org\.ph|gov\.ph|edu\.ph|ngo\.ph|mil\.ph|i\.ph)$', domain_part):
+                    errors.append("Please enter a full TLD (like '.com', '.net', '.org').")
+
+            invalid_chars = set(re.findall(r'[^a-zA-Z0-9_.+-@]', email))
+            if invalid_chars:
+                errors.append(f"The following characters are not allowed: {', '.join(invalid_chars)}")
+            
+            return "Invalid - " + " | ".join(errors)
+
+        def validate_email_js(event):
+            event.preventDefault()
+            email = Element("email").element.value
+            result = validate_email(email)
+            result_element = Element("result")
+            result_element.element.innerHTML = result
+            result_element.element.style.display = "block"
+            result_element.element.className = "error" if "Invalid" in result else "result"
+
+        Element("emailForm").element.onsubmit = validate_email_js
+    </py-script>
+</body>
+</html>
